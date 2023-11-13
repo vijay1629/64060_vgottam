@@ -1,0 +1,155 @@
+---
+title: "FML Assignment"
+author: "Vijay Charan Reddy Gottam"
+date: "2023-11-11"
+output: html_document
+---
+***
+
+**Summary**:
+
+1. We performed a clustering analysis using the nine numerical columns of data from the first question.We are using the K means      clustering algorithm.This method scales the data after determining the pairwise distances between observations by pre-processing   the data to ensure that each variable contributes equally.The optimal number of clusters has been determined by using the          "fviz_nbclust" function.The Fviz_nbclust silhouette technique is a useful tool to figure out how many clusters is the right        amount. The silhouette scores for various cluster sizes help us determine the number of clusters that will maximise group          separation while minimising overlap. Consequently, we discovered that the ideal number of clusters for formation is five.We then   produced a clustering analysis for K = 7. 
+  However, at K = 7 and K = 5, the cluster's sum of square values is 77.5% and 65.4%, respectively.We discovered that the optimal    number was actually five clusters because lower WCSS values are often indicative of more precisely characterised clusters. under   7. We are using the K means algorithm, which clusters the data according to equal treatment of each variable. arrive.The means of   every variable inside each cluster serve as the "centres" that the kmeans represent. algorithm produces a result, and these means   are then combined to find the cluster centroids.
+  The non-numeric variables are connected by certain patterns.
+
+2. Interpret the clusters with respect to the numerical variables used in forming the clusters.
+
+   High market capital, high ROE, high ROA, and high asset turnover define Cluster 1.
+   
+   The largest cluster, cluster 2, is distinguished by its average market capitalization, beta, price/earnings ratio, average to      above-average return on assets, and above-average net profit margin. Additionally, it shows a comparatively large range of         estimated revenue growth, leverage, and ROE values.
+   
+   Similar beta values, a high price/earnings ratio, low ROE/ROA, and net profit margin define Cluster 3.
+   
+   Cluster 4 is distinguished by high estimated revenue growth coupled with below average ROE, ROA, and asset turnover.
+   Low market capital, ROA, asset turnover, projected revenue growth, and net profit margin define 
+   
+   Cluster 5. Additionally, it stands for extreme leverage (high or low) and high beta.
+   
+   Is there a pattern in the clusters with respect to the numerical variables (10 to 12)?  Yes.
+   
+   Cluster 1 is almost entirely US and all NYSE, with a buy or hold recommendation.
+   Half of Cluster 2's holdings are NYSE, all US-based.
+   Cluster 3 exhibits no discernible pattern.
+   All of Cluster 4 is NYSE, with a 50/50 split of moderate buy and moderate sell across a variety of countries.
+   Cluster 5 represents a unique combination of different stock exchanges and a non-US location.
+   
+3. Provide an appropriate name for each cluster using any or all of the variables in the dataset.
+ 
+   Cluster 1 Name: High Performance Leaders
+   Hold/Buy these prominent companies with high ROE and ROA.
+  
+  Cluster 2 Name: Balanced Profitability Mix
+   The average mix with high net profit margin.
+  
+  Cluster 3 Name: Growth with Caution
+   High price/earnings; low ROE, ROA, and net profit margin.
+
+  Cluster 4 Name: Global Growth Opportunities
+   Global mix with low ROE, ROA, and asset turnover but high estimated revenue growth.
+
+  Cluster 5 Name: Speculative Stocks
+   Unique stock exchange mix with mostly low variables; extreme beta and leverage.
+   
+***
+
+   
+
+#Load data into R
+```{r}
+pharm_data <- read.csv("C:\\Users\\Vijay\\OneDrive\\Desktop\\FML\\Assignment_4\\Pharmaceuticals.csv")
+```
+
+
+#Install and Load required packages 
+
+```{r}
+library(tidyverse)
+library(factoextra)
+set.seed(11)
+```
+
+#Set row names as the company name column, select columns required for clustering (3 through 11) and display summary statistics
+
+```{r}
+pharm_data1 <- pharm_data
+row.names(pharm_data1) <- pharm_data1[,2]
+pharm_data1 <- pharm_data1[,c(3,4,5,6,7,8,9,10,11)]
+row.names(pharm_data1)
+summary(pharm_data1)
+```
+#I'm going to create my first k-means clustering algorithm using the Euclidean distance since it is the default method for numerical data. Since the Euclidean distance is sensitive to scale, I need to normalize the data (z-score):
+
+```{r}
+pharm_data2<- scale(pharm_data1)
+distance <- get_dist(pharm_data2)
+fviz_dist(distance)
+```
+
+#Determine the best value for k using an "elbow" chart
+
+```{r}
+fviz_nbclust(pharm_data2, kmeans, method = "wss")
+```
+
+#The output above displays that around 5 - 6 is the ideal value for k (slope stops being as steep)
+
+#Determine the best value for k using the Silhouette Method; compare to "elbow" chart results
+
+```{r}
+fviz_nbclust(pharm_data2, kmeans, method = "silhouette")
+```
+#The silhouette chart displays that 5 is the ideal value for k. I'm selecting k = 5 given both charts show it as an optimal value.
+
+#Run k-means using k = 5, number of restarts = 25
+
+```{r}
+k5 <- kmeans(pharm_data2, centers = 5, nstart = 25) 
+fviz_cluster(k5, data = pharm_data2)
+k5$cluster
+```
+
+#Display the centroids:
+
+```{r}
+k5$centers
+```
+
+#Display the size of each cluster:
+
+```{r}
+k5$size
+```
+#Additionally, a glance at the summary statistics reveals there may be outliers in the dataset. Given the Euclidean distance is sensitive to outliers and ignores correlation, I'm going to cluster the data again using another distance to see the output. I've chosen the Manhattan Distance for this exercise.
+
+#Run k-means again using k = 5 (based on previous "elbow" and silhouette methods) using the Manhattan Distance:
+
+```{r}
+library(flexclust)
+set.seed(101)
+km5 = kcca(pharm_data2, k=5, kccaFamily("kmedians"))
+km5
+```
+#Apply predict function
+
+```{r}
+clusters_index <- predict(km5)
+dist(km5@centers)
+image(km5)
+points(pharm_data2, col=clusters_index, pch=19, cex=0.3)
+
+
+```
+#The k-means algorithm using the Manhattan distance definitely produces a different clustering result with the majority of the dataset being clustered into 2 groups (as opposed to 1 group using the Euclidean distance). Additionally, one of the clusters in this output only contains 1 data point.
+
+#When looking at the clustering diagram above, it seems the data points don't fall as tightly within the clusters as they did when the Euclidean distance was utilized. Additionally, one of the clusters only contains one data point which makes me question if the number of clusters needs to be adjusted when using the Manhattan distance. For the purposes of this analysis though, I'm going to proceed with k = 5 since the elbow and Silhouette methods determined this to be optimal. After seeing both outputs of k-means algorithms using the Euclidean and Manhattan distance, I'm going to proceed with the Euclidean distance method because the clusters seem to be more compact when utilizing the "optimal" value of k = 5.
+
+#Display k-means algorithm using k = 5 and Euclidean distance again:
+
+```{r}
+k5 <- kmeans(pharm_data2, centers = 5, nstart = 25) 
+fviz_cluster(k5, data = pharm_data2)
+k5$cluster
+```
+
+
+
